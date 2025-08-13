@@ -1,136 +1,141 @@
-# 🌱 AgriCure – Smart Fertilizer Recommendation System
+# 🌱 Smart Fertilizer Recommendation System
 
-> 🚀 Built for COMSOC HACKX under the Open Innovation theme  
-> 👨‍💻 Team Leader: Mohit Mehta | 📧 g.mehta1971@gmail.com | 🏫 IIIT-Sonepat
+**AGRICURE = Productivity + Profit + Planet**
+
+An IoT-powered, AI/ML-driven system that provides **real-time, precise, and crop-specific fertilizer recommendations** to farmers. Our goal is to **boost yields, lower costs, and ensure sustainable farming** — all through data-driven, location-aware insights.
 
 ---
 
 ## 🚜 Problem Statement
 
-Farmers often face challenges due to a lack of scientific guidance on fertilizer use, resulting in:
+Farmers often lack **accurate information** about the quality and quantity of fertilizers required for their crops.  
+This leads to:
 
-- Nutrient imbalances and reduced crop yields.
-- Soil degradation and pollution from overuse.
-- Rising fertilizer costs—up to 18% of small farmers' total expenses.
-- Reliance on finite resources like phosphate rock (risk of “peak phosphorus”).
+- **Nutrient imbalance** in soils
+- **Reduced crop yield** and soil degradation
+- **Environmental pollution** from excess fertilizer use
+- Rising **production costs** (fertilizers account for ~18% for small farmers)
+- Inefficient farming practices causing **economic losses**
 
-> 🌍 Over 40–60% of nitrogen and phosphorus fertilizers are wasted, polluting water bodies and releasing nitrous oxide—a greenhouse gas 300× stronger than CO₂.
+**Stats that matter:**
 
----
-
-## 🌾 Our Solution
-
-**AgriCure** is a smart fertilizer recommendation system that uses **real-time IoT sensors** and **machine learning** to provide tailored fertilizer advice. It ensures:
-
-- Better crop growth and yield
-- Optimal input use
-- Environment-friendly farming
+- Over **40–60% of applied nitrogen and phosphorus** never reaches plants — instead, it pollutes waterways or escapes as greenhouse gases.
+- **70% of Indian soils** are nutrient-deficient.
+- Climate resilience and precision agriculture are now critical for food security.
 
 ---
 
-## 🧠 How It Works
+## 💡 Solution Overview
 
-1. ESP32 collects real-time sensor data (NPK, pH, moisture, temperature, etc.)
-2. Sends data via HTTP to the backend server
-3. Python ML model processes and compares with ideal crop requirements
-4. Backend returns fertilizer recommendations
-5. Dashboard displays insights for farmers
+Our **Smart Fertilizer Recommendation System** integrates **IoT sensors + Machine Learning** to deliver **real-time advisory** to farmers.
 
----
+1. **IoT Sensors** measure soil NPK, moisture, pH, temperature, and humidity.
+2. **ML algorithms** compare real-time readings with ideal requirements for the selected crop.
+3. **System outputs** the exact fertilizer type and quantity needed — **anytime, anywhere**.
 
-## 🛠️ Tech Stack
+**Key Benefits:**
 
-### 🔧 Hardware
-- **ESP32 Wi-Fi Module** – Central controller
-- **NPK Sensor** – Measures Nitrogen, Phosphorus, Potassium
-- **Soil Moisture Sensor**
-- **DHT11 / DHT22** – Temperature & Humidity
-- **Power Supply** – Rechargeable Battery / 5V Adapter
-
-### 💻 Software
-- **Frontend**: React.js, Bootstrap
-- **Backend**: Flask / FastAPI, Node.js (optional)
-- **ML**: Python, scikit-learn
-- **Database**: Firebase / MongoDB
-- **IoT & Cloud**: ThingSpeak, HTTP Requests via ESP32
+- Boost yield by **20–30%**
+- Reduce input costs via **variable rate application (VRA)**
+- Promote **climate-smart, sustainable practices**
+- Scalable to millions of smallholders globally
 
 ---
 
-## 📊 Features
+## 🖥️ Tech Stack
 
-- 🔍 **Real-time sensing** for accurate soil & weather data
-- 🧠 **ML-powered recommendations** tailored to crop & environment
-- 🌦️ **Weather-integrated insights** for climate-resilient decisions
-- 🎯 **Precision Delivery** using Variable Rate Application (VRA)
-- 🧑‍🌾 **User-Friendly Interface** with alerts and manual override
-- 🔁 **Data-driven forecasting** for smarter planning
+### **Frontend**
 
----
+- React.js + TypeScript – Dynamic, multilingual UI
+- Tailwind CSS – Modern styling & responsiveness
 
-## 🎯 Target Audience
+### **Backend & APIs**
 
-- Smallholder & medium farmers (1–10+ ha), especially in emerging markets
-- Commercial farmers seeking to reduce costs & environmental impact
-- Agri-cooperatives and advisory service providers
+- Python (Flask / FastAPI) – ML model deployment & API serving
+- Node.js – Supplementary API services
 
----
+### **Machine Learning**
 
-## 📈 Market Snapshot
+- Python + Scikit-learn – Model training & evaluation
+- Precision & adaptable recommendations
 
-- 🌾 140M hectares of cultivable land in India
-- 💸 ₹31K Cr Agri-Tech market by 2033
-- ⚠️ 70% of soil nutrient-deficient
-- ✅ Up to **30% yield boost** & **reduced input costs**
-- 💼 Revenue through subscriptions, data & IoT platform
+### **Database & Cloud**
 
-> **AGRICURE = Productivity + Profit + Planet**
+- Supabase – Crop, user, & sensor data storage
+- ThingSpeak – Real-time IoT data ingestion
 
----
+### **Hardware**
 
-## 🚧 Challenges Faced & Takeaways
-
-- [You can add field deployment, sensor calibration, power management, or real-world feedback challenges here.]
+- **ESP32** – IoT controller, Wi-Fi connectivity
+- **NPK Sensor (RS485)** – Soil nutrient detection (Modbus CRC)
+- **Soil Moisture Sensor** – Analog water content measurement
+- **DHT11** – Temperature & humidity sensor
+- **SH1106 OLED** – Real-time display
+- RS485–TTL converter & rechargeable power supply
 
 ---
 
-## 🔮 Future Scope
+## 🔄 System Workflow
 
-### Pathways to Evolve
-- 📍 Expand to new regions with climate-specific configurations
-- 🛰️ Integrate satellite & drone imagery for large-scale monitoring
-- 🗣️ Add multi-language voice support for rural users
-
-### Upcoming Features
-- 🌱 AI-powered crop rotation planning
-- 📢 Real-time alerts for nutrient runoff or soil changes
-- 💧 Weather-linked fertilizer and irrigation optimization
+1. **Data Collection:** IoT sensors send soil/environment data to ESP32.
+2. **Cloud Sync:** Data uploaded to ThingSpeak.
+3. **ML Analysis:** Backend processes and predicts fertilizer needs.
+4. **User Dashboard:** Farmer gets recommendations via web-app in preferred language.
+5. **Precision Delivery:** Supports Variable Rate Application techniques.
 
 ---
 
-## 🧭 Go-To-Market Strategy
+## 🌍 Target Users
 
-- 📦 Tiered subscriptions (individual ➝ enterprise)
-- 🧃 Bundled IoT + digital advisory kits
-- 🤝 Partner with co-ops, Agri-Tech startups & government bodies
-
----
-
-## 🏁 Long-Term Vision
-
-> Become the **leading digital backbone for precision agriculture**, ensuring:
-> - Higher productivity
-> - Increased farmer income
-> - Sustainable food systems worldwide
+- Small & medium-scale farmers _(1–10+ hectares)_
+- Commercial farms optimizing input use
+- Agribusinesses & cooperatives offering farm advisory
 
 ---
 
-## 👥 Team
+## 📊 Market & Impact
 
-- **Team Name**: AgriCure  
-- **Team Leader**: Mohit Mehta  
-- **Institute**: Indian Institute of Information Technology, Sonepat  
-- **Email**: [g.mehta1971@gmail.com](mailto:g.mehta1971@gmail.com)
+- **14 crore hectares** cultivable land in India
+- **₹31K Cr** projected Indian Agri-Tech market by 2033
+- Precision delivery = lower waste + higher yield
+- Global potential across climate-varying regions
 
 ---
 
-*Built with ❤️ by Team AgriCure*
+## ✨ Features
+
+- 🌐 **Multi-language support:** English, Hindi, Punjabi & more
+- ⚡ **Instant sensing:** Real-time soil & climate insights
+- ☁ **Climate-smart adaptation:** Weather-aware guidance
+- 📈 **Data-driven:** Advanced ML-based predictions
+- 🎯 **Variable Rate Application:** Efficient nutrient usage
+- 🖥 **User-centric dashboard:** Alerts, manual override, easy usability
+
+---
+
+## 🛤 Path to Growth
+
+**Upcoming:**
+
+- AI-powered crop rotation planning
+- Real-time alerts for nutrient runoff & soil quality shifts
+
+**Expansions:**
+
+- Climate-specific configurations for new regions
+- Partnership with agri-drone companies for **precision spraying**
+
+**Long-term Vision:**
+
+> Become the **digital backbone for precision farming** — boosting productivity, profitability & sustainability worldwide.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js & npm
+- Python 3.x
+- ESP32 board & required sensors
+
+### Installation
