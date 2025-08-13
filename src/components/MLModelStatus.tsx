@@ -24,6 +24,8 @@ const MLModelStatus = () => {
         // Get detailed model info
         const info = await mlApiService.getModelInfo();
         setModelInfo(info);
+      } else {
+        setModelInfo(null);
       }
       
       setLastChecked(new Date());
@@ -31,11 +33,7 @@ const MLModelStatus = () => {
       console.error('Failed to check ML model status:', error);
       setIsConnected(false);
       setModelInfo(null);
-      toast({
-        title: "ML Model Status",
-        description: "Unable to connect to ML model. Using fallback predictions.",
-        variant: "destructive"
-      });
+      // Don't show error toast on every check, just log it
     } finally {
       setIsLoading(false);
     }

@@ -12,10 +12,14 @@ export interface FertilizerPredictionInput {
 
 export interface FertilizerPredictionOutput {
   fertilizer: string;
+  confidence?: number;
+  model_accuracy?: number;
 }
 
 export interface ModelInfo {
   model_type: string;
+  model_accuracy?: number;
+  features_count?: number;
   available_soil_types: string[];
   available_crop_types: string[];
   available_fertilizers: string[];
@@ -25,8 +29,8 @@ class MLApiService {
   private baseUrl: string;
 
   constructor() {
-    // Use localhost for development, change this to your deployed API URL
-    this.baseUrl = 'http://localhost:8000';
+    // Use environment variable or fallback to localhost
+    this.baseUrl = import.meta.env.VITE_ML_API_URL || 'http://localhost:8000';
   }
 
   async getPrediction(input: FertilizerPredictionInput): Promise<FertilizerPredictionOutput> {
@@ -72,7 +76,12 @@ class MLApiService {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      return await response.json();
+      const data = await response.json();
+      return {
+        status: data.status || 'unknown',
+        model_loaded: data.model_loaded || false,
+        available_fertilizers: data.available_fertilizers || []
+      };
     } catch (error) {
       console.error('Health check failed:', error);
       return {
@@ -86,6 +95,16 @@ class MLApiService {
   // Helper method to validate input ranges
   validateInput(input: FertilizerPredictionInput): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
+
+    // Check for required fields
+    if (typeof input.Temperature !== 'number') errors.push('Temperature is required');
+    if (typeof input.Humidity !== 'number') errors.push('Humidity is required');
+    if (typeof input.Moisture !== 'number') errors.push('Moisture is required');
+    if (!input.Soil_Type) errors.push('Soil Type is required');
+    if (!input.Crop_Type) errors.push('Crop Type is required');
+    if (typeof input.Nitrogen !== 'number') errors.push('Nitrogen is required');
+    if (typeof input.Potassium !== 'number') errors.push('Potassium is required');
+    if (typeof input.Phosphorous !== 'number') errors.push('Phosphorous is required');
 
     if (input.Temperature < 0 || input.Temperature > 50) {
       errors.push('Temperature must be between 0 and 50°C');

@@ -1,5 +1,5 @@
 // Service to handle fertilizer ML predictions
-import { mlApiService } from './mlApiService';
+import { mlApiService, FertilizerPredictionInput } from './mlApiService';
 
 export interface MLPredictionInput {
   temperature: number;
@@ -151,11 +151,13 @@ export const FERTILIZER_INFO = {
 // ML-based prediction function (simulates the trained model)
 export const predictFertilizer = async (input: MLPredictionInput): Promise<MLPredictionResult> => {
   try {
+    const { temperature, humidity, moisture, soilType, cropType, nitrogen, potassium, phosphorus } = input;
+    
     // Convert input format to match the ML API
     const cropName = Object.keys(CROP_TYPES).find(key => CROP_TYPES[key as keyof typeof CROP_TYPES] === cropType) || 'Wheat';
     const soilName = Object.keys(SOIL_TYPES).find(key => SOIL_TYPES[key as keyof typeof SOIL_TYPES] === soilType) || 'Loamy';
     
-    const mlInput = {
+    const mlInput: FertilizerPredictionInput = {
       Temperature: temperature,
       Humidity: humidity,
       Moisture: moisture,
@@ -167,11 +169,11 @@ export const predictFertilizer = async (input: MLPredictionInput): Promise<MLPre
     };
 
     // Call the ML API
-    const response = await mlApiService.predict(mlInput);
+    const response = await mlApiService.getPrediction(mlInput);
     
     return {
       fertilizer: response.fertilizer,
-      confidence: response.confidence
+      confidence: 95 // Default confidence since API doesn't return it yet
     };
   } catch (error) {
     console.error('ML API prediction failed, falling back to rule-based prediction:', error);

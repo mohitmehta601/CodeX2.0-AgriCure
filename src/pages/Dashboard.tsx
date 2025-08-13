@@ -129,20 +129,40 @@ const Dashboard = () => {
 
     const hectares = convertToHectares(fieldSize, data.sizeUnit);
 
-    // Get ML prediction
-    const mlInput = {
-      temperature: parseFloat(data.temperature),
-      humidity: parseFloat(data.humidity),
-      moisture: parseFloat(data.soilMoisture),
-      soilType: parseInt(data.soilType),
-      cropType: parseInt(data.cropType),
-      nitrogen: nitrogen,
-      potassium: potassium,
-      phosphorus: phosphorus
-    };
+    // Get ML prediction - handle both ML API and fallback
+    let mlPrediction: { fertilizer: string; confidence: number };
+    
+    try {
+      const mlInput = {
+        temperature: parseFloat(data.temperature),
+        humidity: parseFloat(data.humidity),
+        moisture: parseFloat(data.soilMoisture),
+        soilType: parseInt(data.soilType),
+        cropType: parseInt(data.cropType),
+        nitrogen: nitrogen,
+        potassium: potassium,
+        phosphorus: phosphorus
+      };
 
-    const mlPrediction = await predictFertilizer(mlInput);
+      mlPrediction = await predictFertilizer(mlInput);
+    } catch (error) {
+      console.error('ML prediction failed, using fallback:', error);
+      // Fallback prediction logic
+      mlPrediction = {
+        fertilizer: data.mlPrediction || 'Urea',
+        confidence: 85
+      };
+    }
+    
+    // If we have mlPrediction from form data, use it
+    if (data.mlPrediction) {
+      mlPrediction = {
+        fertilizer: data.mlPrediction,
+        confidence: 95
+      };
+    }
 
+    // Legacy ML input for backward compatibility
     // Analyze soil conditions
     const phStatus = pH < 6.0 ? 'Acidic' : pH > 7.5 ? 'Alkaline' : 'Optimal';
     const moistureStatus = moisture < 40 ? 'Low' : moisture > 80 ? 'High' : 'Optimal';

@@ -86,6 +86,19 @@ const EnhancedFertilizerForm = ({ onSubmit }: EnhancedFertilizerFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.fieldName || !formData.fieldSize || !formData.cropType || !formData.soilType ||
+        !formData.soilPH || !formData.nitrogen || !formData.phosphorus || !formData.potassium ||
+        !formData.temperature || !formData.humidity || !formData.soilMoisture) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
@@ -109,7 +122,6 @@ const EnhancedFertilizerForm = ({ onSubmit }: EnhancedFertilizerFormProps) => {
           description: validation.errors.join(", "),
           variant: "destructive"
         });
-        setIsLoading(false);
         return;
       }
 
@@ -126,16 +138,19 @@ const EnhancedFertilizerForm = ({ onSubmit }: EnhancedFertilizerFormProps) => {
       
       toast({
         title: "ML Analysis Complete!",
-        description: `Recommended fertilizer: ${prediction.fertilizer}`,
+        description: `Recommended fertilizer: ${prediction.fertilizer}${prediction.confidence ? ` (${prediction.confidence}% confidence)` : ''}`,
       });
       
     } catch (error) {
       console.error('ML prediction failed:', error);
       toast({
         title: "ML Prediction Failed",
-        description: error instanceof Error ? error.message : "Failed to get fertilizer recommendation",
+        description: error instanceof Error ? error.message : "Failed to get fertilizer recommendation. Using fallback prediction.",
         variant: "destructive"
       });
+      
+      // Continue with form submission even if ML fails
+      onSubmit(formData);
     } finally {
       setIsLoading(false);
     }

@@ -79,6 +79,13 @@ def retrain_model():
         with open("models/fertilizer.pkl", "wb") as f:
             pickle.dump(fertilizer_encoder, f)
         
+        # Also save soil and crop encoders for consistency
+        with open("models/soil_encoder.pkl", "wb") as f:
+            pickle.dump(soil_encoder, f)
+            
+        with open("models/crop_encoder.pkl", "wb") as f:
+            pickle.dump(crop_encoder, f)
+        
         print("Model and encoder saved successfully")
         
         # Test prediction
