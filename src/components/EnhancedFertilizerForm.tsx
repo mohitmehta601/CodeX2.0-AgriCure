@@ -128,6 +128,8 @@ const EnhancedFertilizerForm = ({ onSubmit }: EnhancedFertilizerFormProps) => {
       // Get ML prediction
       const prediction = await mlApiService.getPrediction(mlInput);
       
+      console.log('ML prediction received:', prediction);
+      
       // Call onSubmit with enhanced data including ML prediction
       const enhancedData = {
         ...formData,
@@ -138,14 +140,14 @@ const EnhancedFertilizerForm = ({ onSubmit }: EnhancedFertilizerFormProps) => {
       
       toast({
         title: "ML Analysis Complete!",
-        description: `Recommended fertilizer: ${prediction.fertilizer}${prediction.confidence ? ` (${prediction.confidence}% confidence)` : ''}`,
+        description: `Recommended fertilizer: ${prediction.fertilizer} (${prediction.confidence?.toFixed(1)}% confidence)`,
       });
       
     } catch (error) {
       console.error('ML prediction failed:', error);
       toast({
         title: "ML Prediction Failed",
-        description: error instanceof Error ? error.message : "Failed to get fertilizer recommendation. Using fallback prediction.",
+        description: `${error instanceof Error ? error.message : "Connection failed"}. Using fallback prediction.`,
         variant: "destructive"
       });
       

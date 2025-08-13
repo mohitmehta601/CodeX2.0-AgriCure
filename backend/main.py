@@ -5,6 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import logging
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +29,8 @@ app.add_middleware(
 # Global variables to store model and encoders
 model = None
 fertilizer_encoder = None
+soil_encoder = None
+crop_encoder = None
 
 class PredictionInput(BaseModel):
     Temperature: float
@@ -40,35 +47,122 @@ class PredictionOutput(BaseModel):
     confidence: float = 95.0
     model_accuracy: float = 96.8
 
-def load_existing_model():
-    """Load the existing trained model and encoders"""
-    global model, fertilizer_encoder
+def train_model():
+    """Train the model from the dataset"""
+    global model, fertilizer_encoder, soil_encoder, crop_encoder
     
     try:
-        # Load the newly retrained model
+        # Load the dataset
+        data_path = "../Ml-model-main/f2.csv"
+        if not os.path.exists(data_path):
+            data_path = "Ml-model-main/f2.csv"
+            if not os.path.exists(data_path):
+                raise FileNotFoundError("Dataset f2.csv not found")
+        
+        logger.info(f"Loading dataset from {data_path}")
+        df = pd.read_csv(data_path)
+        
+        logger.info(f"Dataset shape: {df.shape}")
+        
+        # Prepare features and target
+        X = df[['Temparature', 'Humidity', 'Moisture', 'Soil_Type', 'Crop_Type', 'Nitrogen', 'Potassium', 'Phosphorous']]
+        y = df['Fertilizer']
+        
+        # Create label encoders for categorical variables
+        soil_encoder = LabelEncoder()
+        crop_encoder = LabelEncoder()
+        fertilizer_encoder = LabelEncoder()
+        
+        # Encode categorical variables
+        X_encoded = X.copy()
+        X_encoded['Soil_Type'] = soil_encoder.fit_transform(X['Soil_Type'])
+        X_encoded['Crop_Type'] = crop_encoder.fit_transform(X['Crop_Type'])
+        y_encoded = fertilizer_encoder.fit_transform(y)
+        
+        logger.info(f"Unique soil types: {soil_encoder.classes_}")
+        logger.info(f"Unique crop types: {crop_encoder.classes_}")
+        logger.info(f"Unique fertilizers: {fertilizer_encoder.classes_}")
+        
+        # Split the data
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_encoded, y_encoded, test_size=0.2, random_state=42
+        )
+        
+        # Train Random Forest model
+        model = RandomForestClassifier(
+            n_estimators=100,
+            random_state=42,
+            max_depth=10,
+            min_samples_split=5,
+            min_samples_leaf=2
+        )
+        
+        logger.info("Training Random Forest model...")
+        model.fit(X_train, y_train)
+        
+        # Calculate accuracy
+        y_pred = model.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        
+        logger.info(f"Model trained successfully with accuracy: {accuracy:.4f}")
+        
+        # Save the model and encoders
+        os.makedirs("models", exist_ok=True)
+        
+        with open("models/classifier.pkl", "wb") as f:
+            pickle.dump(model, f)
+        
+        with open("models/fertilizer.pkl", "wb") as f:
+            pickle.dump(fertilizer_encoder, f)
+        
+        with open("models/soil_encoder.pkl", "wb") as f:
+            pickle.dump(soil_encoder, f)
+            
+        with open("models/crop_encoder.pkl", "wb") as f:
+            pickle.dump(crop_encoder, f)
+        
+        logger.info("Model and encoders saved successfully")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error training model: {str(e)}")
+        return False
+
+def load_existing_model():
+    """Load the existing trained model and encoders"""
+    global model, fertilizer_encoder, soil_encoder, crop_encoder
+    
+    try:
+        # Check if models exist
         model_path = "models/classifier.pkl"
         if not os.path.exists(model_path):
-            raise FileNotFoundError("Trained model models/classifier.pkl not found")
-        
-        # Load the fertilizer encoder
-        encoder_path = "models/fertilizer.pkl"
-        if not os.path.exists(encoder_path):
-            raise FileNotFoundError("Fertilizer encoder models/fertilizer.pkl not found")
+            logger.info("No existing model found, training new model...")
+            if not train_model():
+                raise Exception("Failed to train model")
+            return
         
         logger.info(f"Loading trained model from {model_path}")
         with open(model_path, 'rb') as f:
             model = pickle.load(f)
         
-        logger.info(f"Loading fertilizer encoder from {encoder_path}")
-        with open(encoder_path, 'rb') as f:
+        with open("models/fertilizer.pkl", 'rb') as f:
             fertilizer_encoder = pickle.load(f)
         
-        logger.info("Model and encoder loaded successfully")
+        with open("models/soil_encoder.pkl", 'rb') as f:
+            soil_encoder = pickle.load(f)
+            
+        with open("models/crop_encoder.pkl", 'rb') as f:
+            crop_encoder = pickle.load(f)
+        
+        logger.info("Model and encoders loaded successfully")
         logger.info(f"Available fertilizers: {fertilizer_encoder.classes_}")
         
     except Exception as e:
         logger.error(f"Error loading model: {str(e)}")
-        raise e
+        logger.info("Attempting to train new model...")
+        if not train_model():
+            raise e
 
 @app.on_event("startup")
 async def startup_event():
@@ -89,7 +183,7 @@ async def root():
 async def health_check():
     """Detailed health check"""
     return {
-        "status": "healthy",
+        "status": "healthy" if model is not None else "unhealthy",
         "model_loaded": model is not None,
         "available_fertilizers": fertilizer_encoder.classes_.tolist() if fertilizer_encoder else []
     }
@@ -98,83 +192,31 @@ async def health_check():
 async def predict_fertilizer(input_data: PredictionInput):
     """Predict fertilizer based on input parameters"""
     
-    if model is None or fertilizer_encoder is None:
+    if model is None or fertilizer_encoder is None or soil_encoder is None or crop_encoder is None:
         raise HTTPException(status_code=500, detail="Model not loaded properly")
     
     try:
-        # Create a mapping for soil types (string to int)
-        soil_type_mapping = {
-            "Clayey": 0,
-            "Loamy": 1,
-            "Red": 2,
-            "Black": 3,
-            "Sandy": 4
-        }
-        
-        # Create a mapping for crop types (string to int)
-        crop_type_mapping = {
-            "rice": 0, "Wheat": 1, "Sugarcane": 2, "Pulses": 3, "Paddy": 4,
-            "pomegranate": 5, "Oil seeds": 6, "Millets": 7, "Maize": 8,
-            "Ground Nuts": 9, "Cotton": 10, "coffee": 11, "watermelon": 12,
-            "Barley": 13, "Tobacco": 14
-        }
-        
-        # Validate soil type
-        if input_data.Soil_Type not in soil_type_mapping:
+        # Validate and encode soil type
+        if input_data.Soil_Type not in soil_encoder.classes_:
             raise HTTPException(
                 status_code=400, 
-                detail=f"Invalid Soil_Type. Available options: {list(soil_type_mapping.keys())}"
+                detail=f"Invalid Soil_Type. Available options: {list(soil_encoder.classes_)}"
             )
         
-        # Validate crop type
-        if input_data.Crop_Type not in crop_type_mapping:
-            # Try to find a close match or use a default
-            crop_lower = input_data.Crop_Type.lower()
-            found_crop = None
-            for crop_key in crop_type_mapping.keys():
-                if crop_key.lower() == crop_lower:
-                    found_crop = crop_key
-                    break
-            
-            if found_crop:
-                crop_encoded = crop_type_mapping[found_crop]
-            else:
-                # Default to Wheat if no match found
-                crop_encoded = crop_type_mapping["Wheat"]
-                logger.warning(f"Unknown crop type {input_data.Crop_Type}, defaulting to Wheat")
-        else:
-            crop_encoded = crop_type_mapping[input_data.Crop_Type]
-        
-        # Similar handling for soil type
-        if input_data.Soil_Type not in soil_type_mapping:
-            soil_lower = input_data.Soil_Type.lower()
-            found_soil = None
-            for soil_key in soil_type_mapping.keys():
-                if soil_key.lower() == soil_lower:
-                    found_soil = soil_key
-                    break
-            
-            if found_soil:
-                soil_encoded = soil_type_mapping[found_soil]
-            else:
-                # Default to Loamy if no match found
-                soil_encoded = soil_type_mapping["Loamy"]
-                logger.warning(f"Unknown soil type {input_data.Soil_Type}, defaulting to Loamy")
-        else:
-            soil_encoded = soil_type_mapping[input_data.Soil_Type]
-        
-        # Remove the old validation that was causing errors
-        """
-        if input_data.Crop_Type not in crop_type_mapping:
+        # Validate and encode crop type
+        if input_data.Crop_Type not in crop_encoder.classes_:
             raise HTTPException(
                 status_code=400, 
-                detail=f"Invalid Crop_Type. Available options: {list(crop_type_mapping.keys())}"
+                detail=f"Invalid Crop_Type. Available options: {list(crop_encoder.classes_)}"
             )
-        """
         
-        # Prepare input array for prediction (note: using the original column order from the dataset)
+        # Encode categorical variables
+        soil_encoded = soil_encoder.transform([input_data.Soil_Type])[0]
+        crop_encoded = crop_encoder.transform([input_data.Crop_Type])[0]
+        
+        # Prepare input array for prediction (using the original column order from the dataset)
         input_array = np.array([[
-            input_data.Temperature,  # This will be mapped to 'Temparature' in the model
+            input_data.Temperature,
             input_data.Humidity,
             input_data.Moisture,
             soil_encoded,
@@ -197,7 +239,7 @@ async def predict_fertilizer(input_data: PredictionInput):
         except:
             confidence = 95.0  # Default confidence
         
-        logger.info(f"Prediction made: {fertilizer}")
+        logger.info(f"Prediction made: {fertilizer} with confidence: {confidence:.1f}%")
         
         return PredictionOutput(
             fertilizer=fertilizer,
@@ -219,8 +261,8 @@ async def get_model_info():
         "model_type": type(model).__name__,
         "model_accuracy": 96.8,
         "features_count": 8,
-        "available_soil_types": ["Clayey", "Loamy", "Red", "Black", "Sandy"],
-        "available_crop_types": ["rice", "Wheat", "Sugarcane", "Pulses", "Paddy", "pomegranate", "Oil seeds", "Millets", "Maize", "Ground Nuts", "Cotton", "coffee", "watermelon", "Barley", "Tobacco", "Jute", "Tea"],
+        "available_soil_types": soil_encoder.classes_.tolist() if soil_encoder else [],
+        "available_crop_types": crop_encoder.classes_.tolist() if crop_encoder else [],
         "available_fertilizers": fertilizer_encoder.classes_.tolist() if fertilizer_encoder else []
     }
 

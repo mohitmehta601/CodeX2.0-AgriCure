@@ -16,24 +16,41 @@ const MLModelStatus = () => {
   const checkModelStatus = async () => {
     setIsLoading(true);
     try {
+      console.log('Checking ML model status...');
       // Check health first
       const health = await mlApiService.healthCheck();
+      console.log('Health check result:', health);
       setIsConnected(health.model_loaded);
       
       if (health.model_loaded) {
         // Get detailed model info
         const info = await mlApiService.getModelInfo();
+        console.log('Model info:', info);
         setModelInfo(info);
       } else {
         setModelInfo(null);
       }
       
       setLastChecked(new Date());
+      
+      // Show success toast when connected
+      if (health.model_loaded) {
+        toast({
+          title: "ML Model Connected",
+          description: "Successfully connected to the machine learning model",
+        });
+      }
     } catch (error) {
       console.error('Failed to check ML model status:', error);
       setIsConnected(false);
       setModelInfo(null);
-      // Don't show error toast on every check, just log it
+      
+      // Show error toast for connection issues
+      toast({
+        title: "ML Model Connection Failed",
+        description: "Unable to connect to the ML API. Using fallback predictions.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }

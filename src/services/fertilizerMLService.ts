@@ -17,32 +17,32 @@ export interface MLPredictionResult {
   confidence: number;
 }
 
-// Crop type mapping based on the ML model data - MUST MATCH BACKEND
+// Crop type mapping based on the actual ML model data from f2.csv
 export const CROP_TYPES = {
-  'rice': 0,
-  'Wheat': 1,
-  'Sugarcane': 2,
-  'Pulses': 3,
-  'Paddy': 4,
-  'pomegranate': 5,
-  'Oil seeds': 6,
-  'Millets': 7,
-  'Maize': 8,
-  'Ground Nuts': 9,
-  'Cotton': 10,
+  'Barley': 0,
+  'Cotton': 1,
+  'Ground Nuts': 2,
+  'Maize': 3,
+  'Millets': 4,
+  'Oil seeds': 5,
+  'Paddy': 6,
+  'Pulses': 7,
+  'Sugarcane': 8,
+  'Tobacco': 9,
+  'Wheat': 10,
   'coffee': 11,
-  'watermelon': 12,
-  'Barley': 13,
-  'Tobacco': 14,
-  'Jute': 15,
-  'Tea': 16
+  'kidneybeans': 12,
+  'orange': 13,
+  'pomegranate': 14,
+  'rice': 15,
+  'watermelon': 16
 };
 
 export const SOIL_TYPES = {
-  'Clayey': 0,
-  'Loamy': 1,
-  'Red': 2,
-  'Black': 3,
+  'Black': 0,
+  'Clayey': 1,
+  'Loamy': 2,
+  'Red': 3,
   'Sandy': 4
 };
 
@@ -173,7 +173,7 @@ export const predictFertilizer = async (input: MLPredictionInput): Promise<MLPre
     
     return {
       fertilizer: response.fertilizer,
-      confidence: 95 // Default confidence since API doesn't return it yet
+      confidence: response.confidence || 95
     };
   } catch (error) {
     console.error('ML API prediction failed, falling back to rule-based prediction:', error);
@@ -184,8 +184,8 @@ export const predictFertilizer = async (input: MLPredictionInput): Promise<MLPre
     let predictedFertilizer = 'Urea'; // Default
     let confidence = 85;
 
-    // High-level decision tree based on ML model patterns - Updated to match new mappings
-    if (cropType === 0 || cropType === 4) { // rice or paddy
+    // High-level decision tree based on ML model patterns
+    if (cropType === 15 || cropType === 6) { // rice or paddy
       if (nitrogen < 50) {
         predictedFertilizer = 'Urea';
         confidence = 92;
@@ -196,7 +196,7 @@ export const predictFertilizer = async (input: MLPredictionInput): Promise<MLPre
         predictedFertilizer = 'TSP';
         confidence = 85;
       }
-    } else if (cropType === 1) { // wheat
+    } else if (cropType === 10) { // wheat
       if (phosphorus < 20) {
         predictedFertilizer = 'DAP';
         confidence = 94;
@@ -207,7 +207,7 @@ export const predictFertilizer = async (input: MLPredictionInput): Promise<MLPre
         predictedFertilizer = '20-20';
         confidence = 86;
       }
-    } else if (cropType === 10) { // cotton
+    } else if (cropType === 1) { // cotton
       if (potassium < 30) {
         predictedFertilizer = 'Potassium sulfate';
         confidence = 91;
@@ -218,7 +218,7 @@ export const predictFertilizer = async (input: MLPredictionInput): Promise<MLPre
         predictedFertilizer = '14-35-14';
         confidence = 84;
       }
-    } else if (cropType === 5 || cropType === 13 || cropType === 16) { // fruits (pomegranate, barley, tea)
+    } else if (cropType === 14 || cropType === 0 || cropType === 16) { // fruits (pomegranate, barley, watermelon)
       if (phosphorus > 30) {
         predictedFertilizer = '14-14-14';
         confidence = 90;
@@ -229,7 +229,7 @@ export const predictFertilizer = async (input: MLPredictionInput): Promise<MLPre
         predictedFertilizer = 'TSP';
         confidence = 85;
       }
-    } else if (cropType === 3) { // pulses
+    } else if (cropType === 7) { // pulses
       predictedFertilizer = '15-15-15';
       confidence = 93;
     } else if (cropType === 11) { // coffee

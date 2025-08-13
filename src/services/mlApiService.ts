@@ -31,10 +31,19 @@ class MLApiService {
   constructor() {
     // Use environment variable or fallback to localhost
     this.baseUrl = import.meta.env.VITE_ML_API_URL || 'http://localhost:8000';
+    logger.info(`ML API URL: ${this.baseUrl}`);
   }
+
+  private logger = {
+    info: (msg: string) => console.log(`[MLApiService] ${msg}`),
+    error: (msg: string) => console.error(`[MLApiService] ${msg}`)
+  };
 
   async getPrediction(input: FertilizerPredictionInput): Promise<FertilizerPredictionOutput> {
     try {
+      this.logger.info(`Making prediction request to ${this.baseUrl}/predict`);
+      this.logger.info(`Input data: ${JSON.stringify(input)}`);
+      
       const response = await fetch(`${this.baseUrl}/predict`, {
         method: 'POST',
         headers: {
@@ -45,45 +54,53 @@ class MLApiService {
 
       if (!response.ok) {
         const errorData = await response.json();
+        this.logger.error(`API error: ${response.status} - ${errorData.detail}`);
         throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+      this.logger.info(`Prediction result: ${JSON.stringify(result)}`);
+      return result;
     } catch (error) {
-      console.error('Error getting prediction:', error);
+      this.logger.error(`Error getting prediction: ${error}`);
       throw error;
     }
   }
 
   async getModelInfo(): Promise<ModelInfo> {
     try {
+      this.logger.info(`Getting model info from ${this.baseUrl}/model-info`);
       const response = await fetch(`${this.baseUrl}/model-info`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+      this.logger.info(`Model info: ${JSON.stringify(result)}`);
+      return result;
     } catch (error) {
-      console.error('Error getting model info:', error);
+      this.logger.error(`Error getting model info: ${error}`);
       throw error;
     }
   }
 
   async healthCheck(): Promise<{status: string; model_loaded: boolean; available_fertilizers: string[]}> {
     try {
+      this.logger.info(`Health check to ${this.baseUrl}/health`);
       const response = await fetch(`${this.baseUrl}/health`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      this.logger.info(`Health check result: ${JSON.stringify(data)}`);
       return {
         status: data.status || 'unknown',
         model_loaded: data.model_loaded || false,
         available_fertilizers: data.available_fertilizers || []
       };
     } catch (error) {
-      console.error('Health check failed:', error);
+      this.logger.error(`Health check failed: ${error}`);
       return {
         status: 'unhealthy',
         model_loaded: false,
