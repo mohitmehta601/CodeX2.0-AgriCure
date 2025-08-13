@@ -38,8 +38,8 @@ const Hero = () => {
                 <div className="text-gray-600 text-sm md:text-base">{t('hero.yieldIncrease')}</div>
               </div>
               <div className="p-4">
-                <div className="text-2xl md:text-3xl font-bold text-grass-600 mb-2">5000+</div>
-                <div className="text-gray-600 text-sm md:text-base">{t('hero.happyFarmers')}</div>
+                <div className="text-2xl md:text-3xl font-bold text-grass-600 mb-2">15+</div>
+                <div className="text-gray-600 text-sm md:text-base">{t('hero.cropTypesSupported')}</div>
               </div>
             </div>
           </div>

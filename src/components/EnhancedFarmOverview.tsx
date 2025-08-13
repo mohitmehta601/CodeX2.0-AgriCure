@@ -16,6 +16,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { farmService, type Farm, type CreateFarmData, type UpdateFarmData } from "@/services/farmService";
 import { getCropTypeOptions, getSoilTypeOptions } from "@/services/fertilizerMLService";
 import { useToast } from "@/hooks/use-toast";
+import MLModelStatus from "./MLModelStatus";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -578,7 +579,7 @@ const EnhancedFarmOverview = ({ user }: EnhancedFarmOverviewProps) => {
                   </SelectTrigger>
                   <SelectContent className="max-h-60">
                     {getCropTypeOptions().map(opt => (
-                      <SelectItem key={opt.value} value={opt.label}>{opt.label}</SelectItem>
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -591,7 +592,7 @@ const EnhancedFarmOverview = ({ user }: EnhancedFarmOverviewProps) => {
                   </SelectTrigger>
                   <SelectContent>
                     {getSoilTypeOptions().map(opt => (
-                      <SelectItem key={opt.value} value={opt.label}>{opt.label}</SelectItem>
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -701,6 +702,9 @@ const EnhancedFarmOverview = ({ user }: EnhancedFarmOverviewProps) => {
           )}
         </CardContent>
       </Card>
+
+      {/* ML Model Status */}
+      <MLModelStatus />
     </div>
   );
 };

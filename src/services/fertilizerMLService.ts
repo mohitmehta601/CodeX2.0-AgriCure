@@ -1,4 +1,6 @@
 // Service to handle fertilizer ML predictions
+import { mlApiService } from './mlApiService';
+
 export interface MLPredictionInput {
   temperature: number;
   humidity: number;
@@ -15,32 +17,32 @@ export interface MLPredictionResult {
   confidence: number;
 }
 
-// Crop type mapping based on the ML model data
+// Crop type mapping based on the ML model data - MUST MATCH BACKEND
 export const CROP_TYPES = {
-  'Barley': 0,
-  'Cotton': 1,
-  'Ground Nuts': 2,
-  'Maize': 3,
-  'Millets': 4,
-  'Oil Seeds': 5,
-  'Paddy': 6,
-  'Pulses': 7,
-  'Sugarcane': 8,
-  'Tobacco': 9,
-  'Wheat': 10,
+  'rice': 0,
+  'Wheat': 1,
+  'Sugarcane': 2,
+  'Pulses': 3,
+  'Paddy': 4,
+  'pomegranate': 5,
+  'Oil seeds': 6,
+  'Millets': 7,
+  'Maize': 8,
+  'Ground Nuts': 9,
+  'Cotton': 10,
   'coffee': 11,
-  'kidneybeans': 12,
-  'orange': 13,
-  'pomegranate': 14,
-  'rice': 15,
-  'watermelon': 16
+  'watermelon': 12,
+  'Barley': 13,
+  'Tobacco': 14,
+  'Jute': 15,
+  'Tea': 16
 };
 
 export const SOIL_TYPES = {
-  'Black': 0,
-  'Clayey': 1,
-  'Loamy': 2,
-  'Red': 3,
+  'Clayey': 0,
+  'Loamy': 1,
+  'Red': 2,
+  'Black': 3,
   'Sandy': 4
 };
 
@@ -148,115 +150,139 @@ export const FERTILIZER_INFO = {
 
 // ML-based prediction function (simulates the trained model)
 export const predictFertilizer = async (input: MLPredictionInput): Promise<MLPredictionResult> => {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  try {
+    // Convert input format to match the ML API
+    const cropName = Object.keys(CROP_TYPES).find(key => CROP_TYPES[key as keyof typeof CROP_TYPES] === cropType) || 'Wheat';
+    const soilName = Object.keys(SOIL_TYPES).find(key => SOIL_TYPES[key as keyof typeof SOIL_TYPES] === soilType) || 'Loamy';
+    
+    const mlInput = {
+      Temperature: temperature,
+      Humidity: humidity,
+      Moisture: moisture,
+      Soil_Type: soilName,
+      Crop_Type: cropName,
+      Nitrogen: nitrogen,
+      Potassium: potassium,
+      Phosphorous: phosphorus
+    };
 
-  // Rule-based prediction based on the ML model training data patterns
-  const { temperature, humidity, moisture, soilType, cropType, nitrogen, potassium, phosphorus } = input;
+    // Call the ML API
+    const response = await mlApiService.predict(mlInput);
+    
+    return {
+      fertilizer: response.fertilizer,
+      confidence: response.confidence
+    };
+  } catch (error) {
+    console.error('ML API prediction failed, falling back to rule-based prediction:', error);
+    
+    // Fallback to rule-based prediction if ML API fails
+    const { temperature, humidity, moisture, soilType, cropType, nitrogen, potassium, phosphorus } = input;
 
-  let predictedFertilizer = 'Urea'; // Default
-  let confidence = 85;
+    let predictedFertilizer = 'Urea'; // Default
+    let confidence = 85;
 
-  // High-level decision tree based on ML model patterns
-  if (cropType === 15 || cropType === 6) { // rice or paddy
-    if (nitrogen < 50) {
-      predictedFertilizer = 'Urea';
-      confidence = 92;
-    } else if (phosphorus < 30) {
-      predictedFertilizer = 'DAP';
-      confidence = 88;
+    // High-level decision tree based on ML model patterns - Updated to match new mappings
+    if (cropType === 0 || cropType === 4) { // rice or paddy
+      if (nitrogen < 50) {
+        predictedFertilizer = 'Urea';
+        confidence = 92;
+      } else if (phosphorus < 30) {
+        predictedFertilizer = 'DAP';
+        confidence = 88;
+      } else {
+        predictedFertilizer = 'TSP';
+        confidence = 85;
+      }
+    } else if (cropType === 1) { // wheat
+      if (phosphorus < 20) {
+        predictedFertilizer = 'DAP';
+        confidence = 94;
+      } else if (nitrogen < 30) {
+        predictedFertilizer = '28-28';
+        confidence = 89;
+      } else {
+        predictedFertilizer = '20-20';
+        confidence = 86;
+      }
+    } else if (cropType === 10) { // cotton
+      if (potassium < 30) {
+        predictedFertilizer = 'Potassium sulfate';
+        confidence = 91;
+      } else if (nitrogen > 100) {
+        predictedFertilizer = 'DAP';
+        confidence = 87;
+      } else {
+        predictedFertilizer = '14-35-14';
+        confidence = 84;
+      }
+    } else if (cropType === 5 || cropType === 13 || cropType === 16) { // fruits (pomegranate, barley, tea)
+      if (phosphorus > 30) {
+        predictedFertilizer = '14-14-14';
+        confidence = 90;
+      } else if (potassium < 20) {
+        predictedFertilizer = '10-26-26';
+        confidence = 88;
+      } else {
+        predictedFertilizer = 'TSP';
+        confidence = 85;
+      }
+    } else if (cropType === 3) { // pulses
+      predictedFertilizer = '15-15-15';
+      confidence = 93;
+    } else if (cropType === 11) { // coffee
+      if (nitrogen > 80) {
+        predictedFertilizer = 'Urea';
+        confidence = 95;
+      } else {
+        predictedFertilizer = 'DAP';
+        confidence = 89;
+      }
     } else {
-      predictedFertilizer = 'TSP';
-      confidence = 85;
+      // General crops
+      if (nitrogen < 20 && phosphorus < 20 && potassium < 20) {
+        predictedFertilizer = '17-17-17';
+        confidence = 87;
+      } else if (nitrogen < 15) {
+        predictedFertilizer = 'Urea';
+        confidence = 90;
+      } else if (phosphorus < 15) {
+        predictedFertilizer = 'DAP';
+        confidence = 88;
+      } else if (potassium < 15) {
+        predictedFertilizer = 'Potassium sulfate';
+        confidence = 86;
+      } else {
+        predictedFertilizer = '14-14-14';
+        confidence = 83;
+      }
     }
-  } else if (cropType === 10) { // wheat
-    if (phosphorus < 20) {
-      predictedFertilizer = 'DAP';
-      confidence = 94;
-    } else if (nitrogen < 30) {
-      predictedFertilizer = '28-28';
-      confidence = 89;
-    } else {
-      predictedFertilizer = '20-20';
-      confidence = 86;
-    }
-  } else if (cropType === 1) { // cotton
-    if (potassium < 30) {
-      predictedFertilizer = 'Potassium sulfate';
-      confidence = 91;
-    } else if (nitrogen > 100) {
-      predictedFertilizer = 'DAP';
-      confidence = 87;
-    } else {
-      predictedFertilizer = '14-35-14';
-      confidence = 84;
-    }
-  } else if (cropType === 13 || cropType === 14 || cropType === 16) { // fruits
-    if (phosphorus > 30) {
-      predictedFertilizer = '14-14-14';
-      confidence = 90;
-    } else if (potassium < 20) {
-      predictedFertilizer = '10-26-26';
-      confidence = 88;
-    } else {
-      predictedFertilizer = 'TSP';
-      confidence = 85;
-    }
-  } else if (cropType === 12) { // kidneybeans
-    predictedFertilizer = '15-15-15';
-    confidence = 93;
-  } else if (cropType === 11) { // coffee
-    if (nitrogen > 80) {
-      predictedFertilizer = 'Urea';
-      confidence = 95;
-    } else {
-      predictedFertilizer = 'DAP';
-      confidence = 89;
-    }
-  } else {
-    // General crops
-    if (nitrogen < 20 && phosphorus < 20 && potassium < 20) {
-      predictedFertilizer = '17-17-17';
-      confidence = 87;
-    } else if (nitrogen < 15) {
-      predictedFertilizer = 'Urea';
-      confidence = 90;
-    } else if (phosphorus < 15) {
-      predictedFertilizer = 'DAP';
-      confidence = 88;
-    } else if (potassium < 15) {
-      predictedFertilizer = 'Potassium sulfate';
-      confidence = 86;
-    } else {
-      predictedFertilizer = '14-14-14';
-      confidence = 83;
-    }
+
+    // Adjust confidence based on environmental factors
+    if (temperature < 15 || temperature > 40) confidence -= 5;
+    if (humidity < 30 || humidity > 90) confidence -= 3;
+    if (moisture < 20 || moisture > 90) confidence -= 4;
+
+    // Ensure confidence is within reasonable bounds
+    confidence = Math.max(75, Math.min(98, confidence));
+
+    return {
+      fertilizer: predictedFertilizer,
+      confidence
+    };
   }
-
-  // Adjust confidence based on environmental factors
-  if (temperature < 15 || temperature > 40) confidence -= 5;
-  if (humidity < 30 || humidity > 90) confidence -= 3;
-  if (moisture < 20 || moisture > 90) confidence -= 4;
-
-  // Ensure confidence is within reasonable bounds
-  confidence = Math.max(75, Math.min(98, confidence));
-
-  return {
-    fertilizer: predictedFertilizer,
-    confidence
-  };
 };
 
 export const getCropTypeOptions = () => {
   return Object.keys(CROP_TYPES).map(crop => ({
-    value: CROP_TYPES[crop as keyof typeof CROP_TYPES].toString(),
+    value: crop, // Use the actual crop type name instead of numeric code
     label: crop
   }));
 };
 
 export const getSoilTypeOptions = () => {
   return Object.keys(SOIL_TYPES).map(soil => ({
-    value: SOIL_TYPES[soil as keyof typeof SOIL_TYPES].toString(),
+    value: soil, // Use the actual soil type name instead of numeric code
     label: soil
   }));
 };

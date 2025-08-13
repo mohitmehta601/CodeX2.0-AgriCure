@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { getCropTypeOptions, getSoilTypeOptions } from "@/services/fertilizerMLService";
+import { mlApiService, FertilizerPredictionInput } from "@/services/mlApiService";
 import { Sparkles, Leaf, Zap } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealTimeData } from "@/contexts/RealTimeDataContext";
@@ -23,6 +24,7 @@ interface FormData {
   temperature: string;
   humidity: string;
   soilMoisture: string;
+  mlPrediction?: string;
 }
 
 interface EnhancedFertilizerFormProps {
@@ -86,15 +88,57 @@ const EnhancedFertilizerForm = ({ onSubmit }: EnhancedFertilizerFormProps) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate processing
-    setTimeout(() => {
-      onSubmit(formData);
+    try {
+      // Prepare input for ML API
+      const mlInput: FertilizerPredictionInput = {
+        Temperature: parseFloat(formData.temperature),
+        Humidity: parseFloat(formData.humidity),
+        Moisture: parseFloat(formData.soilMoisture),
+        Soil_Type: formData.soilType,
+        Crop_Type: formData.cropType,
+        Nitrogen: parseFloat(formData.nitrogen),
+        Potassium: parseFloat(formData.potassium),
+        Phosphorous: parseFloat(formData.phosphorus)
+      };
+
+      // Validate input
+      const validation = mlApiService.validateInput(mlInput);
+      if (!validation.isValid) {
+        toast({
+          title: "Validation Error",
+          description: validation.errors.join(", "),
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Get ML prediction
+      const prediction = await mlApiService.getPrediction(mlInput);
+      
+      // Call onSubmit with enhanced data including ML prediction
+      const enhancedData = {
+        ...formData,
+        mlPrediction: prediction.fertilizer
+      };
+      
+      onSubmit(enhancedData);
+      
       toast({
-        title: "Analysis Complete",
-        description: "Your enhanced fertilizer recommendations are ready!",
+        title: "ML Analysis Complete!",
+        description: `Recommended fertilizer: ${prediction.fertilizer}`,
       });
+      
+    } catch (error) {
+      console.error('ML prediction failed:', error);
+      toast({
+        title: "ML Prediction Failed",
+        description: error instanceof Error ? error.message : "Failed to get fertilizer recommendation",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   const cropOptions = getCropTypeOptions();
