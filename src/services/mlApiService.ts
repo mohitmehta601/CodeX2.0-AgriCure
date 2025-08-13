@@ -31,7 +31,7 @@ class MLApiService {
   constructor() {
     // Use environment variable or fallback to localhost
     this.baseUrl = import.meta.env.VITE_ML_API_URL || 'http://localhost:8000';
-    logger.info(`ML API URL: ${this.baseUrl}`);
+    this.logger.info(`ML API URL: ${this.baseUrl}`);
   }
 
   private logger = {
